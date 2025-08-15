@@ -31,7 +31,27 @@ Bu Python betiği, Excel dosyalarından gelişmiş ve interaktif haritalar oluş
 2. **Boş Değer**: Rank yoksa → Standart mavi pin
 3. **Sayısal Değer**: 1-10 arası → Yeşilden mora gradient renk
 
-## 🛠️ Kurulum
+## 🛠️ Kurulum ve Çalıştırma
+
+### Otomatik Kurulum (Önerilen)
+
+**Windows kullanıcıları için:**
+```cmd
+excel_to_map.bat
+```
+
+**Linux/macOS kullanıcıları için:**
+```bash
+./excel_to_map.sh
+```
+
+Bu batch/script dosyaları otomatik olarak:
+- Python kurulumunu kontrol eder
+- Gerekli paketleri kurar
+- Excel dosyalarını kontrol eder
+- Harita oluşturucuyu çalıştırır
+
+### Manuel Kurulum
 
 1. Gerekli paketleri kurun:
 ```bash
@@ -78,6 +98,33 @@ python excel_to_map.py
 - Verimli renk hesaplama algoritması
 - Hafıza dostu veri işleme
 - Hızlı HTML çıktı üretimi
+
+## 📁 Dosyalar
+
+- **`excel_to_map.py`** - Ana Python betiği
+- **`excel_to_map.bat`** - Windows batch dosyası (otomatik kurulum)
+- **`excel_to_map.sh`** - Linux/macOS bash script (otomatik kurulum)
+- **`requirements.txt`** - Python paket gereksinimleri
+- **`README.md`** - Bu kılavuz
+
+## 🔧 Batch/Script Dosyaları Özellikleri
+
+### Windows (.bat)
+- ✅ Python kurulum kontrolü
+- ✅ pip kurulum kontrolü  
+- ✅ Paket kurulum kontrolü ve otomatik kurulum
+- ✅ Excel dosya kontrolü
+- ✅ UTF-8 karakter desteği
+- ✅ Renkli çıktı
+- ✅ Detaylı hata mesajları
+
+### Linux/macOS (.sh)
+- ✅ Python3/python otomatik algılama
+- ✅ Sanal ortam desteği
+- ✅ Sistem paket yöneticisi entegrasyonu
+- ✅ ANSI renk kodları
+- ✅ Unicode emoji desteği
+- ✅ Kapsamlı hata yönetimi
 
 ## 🤝 Destek
 
