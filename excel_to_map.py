@@ -29,18 +29,37 @@ import folium
 from folium.plugins import MarkerCluster
 import numpy as np
 from typing import List, Tuple, Optional, Dict, Any
+import googlemaps
+import requests
+import time
+from urllib.parse import quote
 
 
 class ExcelToMapConverter:
     """Excel dosyalarından interaktif harita oluşturan ana sınıf"""
     
-    def __init__(self):
+    def __init__(self, google_api_key: str = None):
         self.required_columns = ['latitude', 'longitude', 'title']
         self.optional_columns = ['rank', 'url']
         self.special_rank_value = "%26%2310006%3B"
         self.color_green = "#5cb85c"
         self.color_purple = "#5e35b1"
         self.color_red = "#d9534f"
+        
+        # Google Places API setup
+        self.google_api_key = google_api_key or "AIzaSyDbxLE2AXm9ZhryXpuWpBz8LDlDnBc9-9Y"
+        if self.google_api_key:
+            try:
+                self.gmaps = googlemaps.Client(key=self.google_api_key)
+                self.places_enabled = True
+                print("✅ Google Places API bağlantısı kuruldu")
+            except Exception as e:
+                print(f"⚠️ Google Places API bağlantısı kurulamadı: {e}")
+                self.places_enabled = False
+                self.gmaps = None
+        else:
+            self.places_enabled = False
+            self.gmaps = None
         
     def find_excel_files(self, directory: str = ".") -> List[str]:
         """Belirtilen dizindeki Excel dosyalarını bulur"""
@@ -257,16 +276,118 @@ class ExcelToMapConverter:
             icon_anchor=(15, 15)
         )
     
-    def create_popup_content(self, row: pd.Series) -> str:
-        """Popup içeriği oluşturur"""
+    def get_places_info(self, lat: float, lon: float, name: str = None) -> Dict[str, Any]:
+        """Google Places API'den konum bilgilerini alır"""
+        if not self.places_enabled:
+            return {}
+        
+        try:
+            # Nearby search ile en yakın yeri bul
+            nearby_search = self.gmaps.places_nearby(
+                location=(lat, lon),
+                radius=100,  # 100 metre yarıçap
+                language='tr'
+            )
+            
+            if not nearby_search.get('results'):
+                return {}
+            
+            # En yakın sonucu al
+            place = nearby_search['results'][0]
+            place_id = place.get('place_id')
+            
+            if not place_id:
+                return {}
+            
+            # Detaylı bilgi al
+            place_details = self.gmaps.place(
+                place_id=place_id,
+                fields=['name', 'rating', 'formatted_phone_number', 'website', 
+                       'opening_hours', 'photo', 'type', 'formatted_address',
+                       'price_level', 'user_ratings_total'],
+                language='tr'
+            )
+            
+            result = place_details.get('result', {})
+            
+            # Fotoğraf URL'si oluştur
+            photos = result.get('photo', [])
+            photo_url = None
+            if photos:
+                photo_reference = photos[0].get('photo_reference')
+                if photo_reference:
+                    photo_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photo_reference={photo_reference}&key={self.google_api_key}"
+            
+            return {
+                'name': result.get('name', ''),
+                'rating': result.get('rating'),
+                'rating_count': result.get('user_ratings_total'),
+                'phone': result.get('formatted_phone_number', ''),
+                'website': result.get('website', ''),
+                'address': result.get('formatted_address', ''),
+                'opening_hours': result.get('opening_hours', {}).get('weekday_text', []),
+                'photo_url': photo_url,
+                'types': result.get('type', []),
+                'price_level': result.get('price_level')
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Places API hatası ({lat}, {lon}): {e}")
+            return {}
+    
+    def create_popup_content(self, row: pd.Series, places_info: Dict[str, Any] = None) -> str:
+        """Popup içeriği oluşturur (Google Places bilgileri ile zenginleştirilmiş)"""
         title = row['title']
         content = f"<b>{title}</b>"
         
-        # URL varsa link ekle
+        # Google Places bilgileri varsa ekle
+        if places_info:
+            # Fotoğraf
+            if places_info.get('photo_url'):
+                content += f'<br><br><img src="{places_info["photo_url"]}" style="max-width: 280px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">'
+            
+            # Rating
+            if places_info.get('rating'):
+                rating = places_info['rating']
+                rating_count = places_info.get('rating_count', 0)
+                stars = "⭐" * int(rating)
+                content += f'<br><br><span style="color: #ff9800; font-weight: bold;">{stars} {rating}/5</span>'
+                if rating_count:
+                    content += f' <span style="color: #666; font-size: 12px;">({rating_count} değerlendirme)</span>'
+            
+            # Adres
+            if places_info.get('address'):
+                content += f'<br><br>📍 <span style="color: #555;">{places_info["address"]}</span>'
+            
+            # Telefon
+            if places_info.get('phone'):
+                content += f'<br>📞 <a href="tel:{places_info["phone"]}" style="color: #007bff; text-decoration: none;">{places_info["phone"]}</a>'
+            
+            # Website (Places API'den)
+            if places_info.get('website'):
+                content += f'<br>🌐 <a href="{places_info["website"]}" target="_blank" style="color: #007bff; text-decoration: none;">Website</a>'
+            
+            # Açılış saatleri (sadece bugün)
+            opening_hours = places_info.get('opening_hours', [])
+            if opening_hours:
+                import datetime
+                today = datetime.datetime.now().weekday()  # 0=Pazartesi, 6=Pazar
+                if today < len(opening_hours):
+                    content += f'<br>🕒 <span style="color: #555; font-size: 12px;">{opening_hours[today]}</span>'
+            
+            # Fiyat seviyesi
+            price_level = places_info.get('price_level')
+            if price_level is not None:
+                price_symbols = "💰" * (price_level + 1) if price_level <= 3 else "💰💰💰💰"
+                content += f'<br>💵 <span style="color: #4caf50;">{price_symbols}</span>'
+        
+        # Orijinal URL varsa ekle (Places API website'ından farklıysa)
         if 'url' in row.index and pd.notna(row['url']) and str(row['url']).strip():
             url = str(row['url']).strip()
             if url and not url.lower() in ['nan', 'none', '']:
-                content += f'<br><br><a href="{url}" target="_blank" style="color: #007bff; text-decoration: none;">🔗 Detayları Görüntüle</a>'
+                places_website = places_info.get('website', '') if places_info else ''
+                if url != places_website:
+                    content += f'<br><br><a href="{url}" target="_blank" style="color: #007bff; text-decoration: none;">🔗 Detayları Görüntüle</a>'
         
         return content
     
@@ -303,16 +424,29 @@ class ExcelToMapConverter:
                     numeric_ranks.append(float(value))
         
         print(f"📍 {len(df)} konum işleniyor...")
+        if self.places_enabled:
+            print("🔍 Google Places API ile konum bilgileri zenginleştiriliyor...")
         
         # Her satır için marker oluştur
         for idx, row in df.iterrows():
             lat, lon = row['latitude'], row['longitude']
             
+            # Google Places bilgilerini al (varsa)
+            places_info = {}
+            if self.places_enabled:
+                places_info = self.get_places_info(lat, lon, row['title'])
+                if places_info:
+                    print(f"✅ Places bilgisi alındı: {row['title']}")
+                else:
+                    print(f"ℹ️  Places bilgisi bulunamadı: {row['title']}")
+                # API rate limiting için kısa bekleme
+                time.sleep(0.1)
+            
             # Pin özelliklerini al
             pin_props = self.get_pin_properties(row, numeric_ranks)
             
-            # Popup içeriği
-            popup_content = self.create_popup_content(row)
+            # Popup içeriği (Places bilgileri ile zenginleştirilmiş)
+            popup_content = self.create_popup_content(row, places_info)
             
             # Marker oluştur
             if pin_props['use_div_icon'] and pin_props['text']:
@@ -322,11 +456,14 @@ class ExcelToMapConverter:
                 # Standart icon kullan
                 icon = folium.Icon(color='blue', icon='info-sign')
             
+            # Tooltip için Places name varsa onu kullan
+            tooltip_text = places_info.get('name', row['title']) if places_info else row['title']
+            
             # Marker'ı cluster'a ekle
             folium.Marker(
                 location=[lat, lon],
-                popup=folium.Popup(popup_content, max_width=300),
-                tooltip=row['title'],
+                popup=folium.Popup(popup_content, max_width=320),
+                tooltip=tooltip_text,
                 icon=icon
             ).add_to(marker_cluster)
         
