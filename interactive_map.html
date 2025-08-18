@@ -12,6 +12,7 @@
         });
     </script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -216,6 +217,11 @@
             <button id="exportHeatmap" class="control-button w-full bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <i class="fas fa-fire"></i>
                 Isı Haritası İndir
+            </button>
+            
+            <button id="takeScreenshot" class="control-button w-full bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-camera"></i>
+                Ekran Görüntüsü Al
             </button>
         </div>
         
@@ -573,6 +579,144 @@
             }
         }
 
+        // Screenshot alma fonksiyonu
+        async function takeScreenshot() {
+            try {
+                const button = document.getElementById('takeScreenshot');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Çekiliyor...';
+                button.disabled = true;
+
+                // Kısa bir bekleme (haritanın tam yüklenmesi için)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Screenshot seçenekleri
+                const options = {
+                    useCORS: true,
+                    allowTaint: true,
+                    scale: 1,
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    scrollX: 0,
+                    scrollY: 0,
+                    backgroundColor: '#ffffff',
+                    ignoreElements: function(element) {
+                        // Control panel'leri screenshot'tan hariç tut (isteğe bağlı)
+                        return element.classList.contains('control-panel') || 
+                               element.classList.contains('stats-panel') ||
+                               element.classList.contains('legend');
+                    }
+                };
+
+                // HTML2Canvas ile screenshot al
+                const canvas = await html2canvas(document.body, options);
+                
+                // Canvas'ı blob'a çevir
+                canvas.toBlob(function(blob) {
+                    // İndirme linki oluştur
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `harita_screenshot_${new Date().toISOString().slice(0,19).replace(/[:.]/g, '-')}.png`;
+                    
+                    // Linki DOM'a ekle, tıkla ve kaldır
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // URL'yi temizle
+                    URL.revokeObjectURL(url);
+                    
+                    // Başarı mesajı
+                    showNotification('Screenshot başarıyla kaydedildi!', 'success');
+                    
+                }, 'image/png', 1.0);
+
+            } catch (error) {
+                console.error('Screenshot error:', error);
+                showNotification('Screenshot alma hatası: ' + error.message, 'error');
+            } finally {
+                const button = document.getElementById('takeScreenshot');
+                button.innerHTML = '<i class="fas fa-camera"></i> Ekran Görüntüsü Al';
+                button.disabled = false;
+            }
+        }
+
+        // Alternatif screenshot fonksiyonu (sadece harita alanı)
+        async function takeMapScreenshot() {
+            try {
+                const button = document.getElementById('takeScreenshot');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Çekiliyor...';
+                button.disabled = true;
+
+                // Sadece harita div'ini screenshot al
+                const mapElement = document.getElementById('map');
+                
+                const options = {
+                    useCORS: true,
+                    allowTaint: true,
+                    scale: 2, // Yüksek kalite için
+                    backgroundColor: '#ffffff',
+                    width: mapElement.offsetWidth,
+                    height: mapElement.offsetHeight
+                };
+
+                const canvas = await html2canvas(mapElement, options);
+                
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `harita_${new Date().toISOString().slice(0,19).replace(/[:.]/g, '-')}.png`;
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification('Harita screenshot\'u başarıyla kaydedildi!', 'success');
+                    
+                }, 'image/png', 1.0);
+
+            } catch (error) {
+                console.error('Map screenshot error:', error);
+                showNotification('Harita screenshot alma hatası: ' + error.message, 'error');
+            } finally {
+                const button = document.getElementById('takeScreenshot');
+                button.innerHTML = '<i class="fas fa-camera"></i> Ekran Görüntüsü Al';
+                button.disabled = false;
+            }
+        }
+
+        // Bildirim gösterme fonksiyonu
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animasyon için kısa bekleme
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // 3 saniye sonra kaldır
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
         // Marker'ları oluştur
         async function createMarkers() {
             const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
@@ -714,6 +858,11 @@
             // Heatmap export
             document.getElementById('exportHeatmap').addEventListener('click', () => {
                 exportHeatmap();
+            });
+            
+            // Screenshot
+            document.getElementById('takeScreenshot').addEventListener('click', () => {
+                takeMapScreenshot(); // Sadece harita alanının screenshot'unu al
             });
         }
         
