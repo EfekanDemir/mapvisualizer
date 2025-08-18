@@ -311,7 +311,7 @@
         let map;
         console.log("🚀 JavaScript başlatılıyor - Versiyon 2.0");
         let markers = [];
-        let markerClusterer = null;
+        let markerClustererInstance = null;
         let heatmap = null;
         let is3DEnabled = false;
         let isDensityVisible = false;
@@ -406,9 +406,9 @@
         function toggleClustering() {
             if (isClusteringEnabled) {
                 // Kümelemeyi kapat
-                if (markerClusterer) {
-                    markerClusterer.clearMarkers();
-                    markerClusterer = null;
+                if (markerClustererInstance) {
+                    markerClustererInstance.clearMarkers();
+                    markerClustererInstance = null;
                 }
                 // Marker'ları tekrar göster
                 markers.forEach(marker => marker.map = map);
@@ -419,7 +419,7 @@
                     markers.forEach(marker => marker.map = null);
                     
                     // MarkerClusterer oluştur
-                    markerClusterer = new MarkerClusterer({
+                    markerClustererInstance = new MarkerClusterer({
                         markers: markers,
                         map: map,
                         algorithm: new window.markerClusterer.GridAlgorithm({
