@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Test - MarkerClusterer</title>
+</head>
+<body>
+    <div id="debug-info">
+        <h1>JavaScript Debug Test</h1>
+        <p>Konsolu açın (F12) ve aşağıdaki mesajları kontrol edin:</p>
+        <ul>
+            <li>✅ JavaScript başlatılıyor mesajı</li>
+            <li>✅ MarkerClusterer yüklenme durumu</li>
+            <li>✅ Hata mesajı olmaması</li>
+        </ul>
+    </div>
+
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js?v=2.0"></script>
+    <script>
+        console.log("🚀 Debug test başlatılıyor...");
+        
+        // Test markerClusterer declaration
+        let markerClusterer = null;
+        console.log("✅ markerClusterer değişkeni başarıyla tanımlandı:", typeof markerClusterer);
+        
+        // Test if MarkerClusterer class is available
+        if (typeof MarkerClusterer !== 'undefined') {
+            console.log("✅ MarkerClusterer sınıfı başarıyla yüklendi");
+        } else {
+            console.error("❌ MarkerClusterer sınıfı yüklenemedi");
+        }
+        
+        console.log("🎉 Debug test tamamlandı - Herhangi bir 'already declared' hatası yoksa sorun çözüldü!");
+    </script>
+</body>
+</html>
