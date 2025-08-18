@@ -607,13 +607,56 @@ class UltraModernMapsVisualizer:
         </div>
         
         <div class="mt-6 pt-6 border-t border-white border-opacity-20">
-            <label class="block text-white text-sm font-medium mb-2">Map Style:</label>
-            <select id="mapStyle" class="w-full px-3 py-2 border border-white border-opacity-20 rounded-lg bg-white bg-opacity-10 text-white">
-                <option value="roadmap">Roadmap</option>
-                <option value="satellite">Satellite</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="terrain">Terrain</option>
-            </select>
+            <label class="block text-white text-sm font-medium mb-3">Harita Türü:</label>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button class="map-type-btn active" data-type="roadmap">
+                    <i class="fas fa-road"></i>
+                    <span>Yol</span>
+                </button>
+                <button class="map-type-btn" data-type="satellite">
+                    <i class="fas fa-satellite"></i>
+                    <span>Uydu</span>
+                </button>
+                <button class="map-type-btn" data-type="hybrid">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Hibrit</span>
+                </button>
+                <button class="map-type-btn" data-type="terrain">
+                    <i class="fas fa-mountain"></i>
+                    <span>Arazi</span>
+                </button>
+            </div>
+            
+            <!-- Advanced Satellite Options -->
+            <div id="satelliteOptions" class="hidden">
+                <label class="block text-white text-sm font-medium mb-2">Uydu Seçenekleri:</label>
+                <div class="space-y-2">
+                    <label class="flex items-center text-white text-sm">
+                        <input type="checkbox" id="show45Imagery" class="mr-2 rounded">
+                        45° Görüntüleme
+                    </label>
+                    <label class="flex items-center text-white text-sm">
+                        <input type="checkbox" id="showTrafficLayer" class="mr-2 rounded">
+                        Trafik Durumu
+                    </label>
+                    <label class="flex items-center text-white text-sm">
+                        <input type="checkbox" id="showWeatherLayer" class="mr-2 rounded">
+                        Hava Durumu
+                    </label>
+                    <label class="flex items-center text-white text-sm">
+                        <input type="checkbox" id="showTransitLayer" class="mr-2 rounded">
+                        Toplu Taşıma
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Street View Integration -->
+            <div class="mt-4">
+                <button id="streetViewBtn" class="w-full modern-btn" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <i class="fas fa-street-view mr-2"></i>
+                    Street View
+                </button>
+            </div>
         </div>
     </div>
     
