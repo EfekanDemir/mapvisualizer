@@ -24,11 +24,16 @@
         let markerClustererInstance = null;
         console.log("✅ markerClustererInstance değişkeni başarıyla tanımlandı:", typeof markerClustererInstance);
         
-        // Test if MarkerClusterer class is available
-        if (typeof MarkerClusterer !== 'undefined') {
-            console.log("✅ MarkerClusterer sınıfı başarıyla yüklendi");
+        // Test if MarkerClusterer class is available (modern API)
+        if (typeof markerClusterer !== 'undefined' && markerClusterer.MarkerClusterer) {
+            console.log("✅ MarkerClusterer sınıfı başarıyla yüklendi (modern API)");
+            console.log("✅ markerClusterer namespace:", typeof markerClusterer);
+            console.log("✅ MarkerClusterer class:", typeof markerClusterer.MarkerClusterer);
+        } else if (typeof MarkerClusterer !== 'undefined') {
+            console.log("✅ MarkerClusterer sınıfı başarıyla yüklendi (eski API)");
         } else {
             console.error("❌ MarkerClusterer sınıfı yüklenemedi");
+            console.log("🔍 Mevcut global değişkenler:", Object.keys(window).filter(key => key.toLowerCase().includes('marker')));
         }
         
         console.log("🎉 Debug test tamamlandı - Herhangi bir 'already declared' hatası yoksa sorun çözüldü!");

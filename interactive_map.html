@@ -414,12 +414,12 @@
                 markers.forEach(marker => marker.map = map);
             } else {
                 // Kümelemeyi aç
-                if (window.MarkerClusterer) {
+                if (window.markerClusterer && window.markerClusterer.MarkerClusterer) {
                     // Önce marker'ları haritadan kaldır
                     markers.forEach(marker => marker.map = null);
                     
                     // MarkerClusterer oluştur
-                    markerClustererInstance = new MarkerClusterer({
+                    markerClustererInstance = new markerClusterer.MarkerClusterer({
                         markers: markers,
                         map: map,
                         algorithm: new window.markerClusterer.GridAlgorithm({
