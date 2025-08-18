@@ -45,6 +45,7 @@ class ExcelToMapConverter:
         self.color_green = "#5cb85c"
         self.color_purple = "#5e35b1"
         self.color_red = "#d9534f"
+        self.color_gray = "#6c757d"
         
         # Google Places API setup
         self.google_api_key = google_api_key or "AIzaSyDbxLE2AXm9ZhryXpuWpBz8LDlDnBc9-9Y"
@@ -219,7 +220,12 @@ class ExcelToMapConverter:
         }
         
         if 'rank' not in row.index or pd.isna(row['rank']):
-            # Kural 2: Boş değer - standart mavi icon
+            # Kural 2: Boş değer - daire içinde "?" göster
+            pin_props.update({
+                'color': '#007bff',  # Mavi renk
+                'text': '?',
+                'use_div_icon': True
+            })
             return pin_props
         
         rank_value = row['rank']
@@ -227,7 +233,7 @@ class ExcelToMapConverter:
         # Kural 1: Özel değer kontrolü
         if str(rank_value) == self.special_rank_value:
             pin_props.update({
-                'color': self.color_red,
+                'color': self.color_gray,
                 'text': '20+',
                 'use_div_icon': True
             })
@@ -249,7 +255,12 @@ class ExcelToMapConverter:
             })
             return pin_props
         
-        # Varsayılan durum
+        # Varsayılan durum - sayısal olmayan rank değerleri için
+        pin_props.update({
+            'color': '#6c757d',  # Gri renk
+            'text': str(rank_value)[:3] if len(str(rank_value)) > 3 else str(rank_value),  # Uzun metinleri kısalt
+            'use_div_icon': True
+        })
         return pin_props
     
     def create_custom_div_icon(self, text: str, color: str) -> folium.DivIcon:
