@@ -820,7 +820,7 @@ class UltraModernMapsVisualizer:
         function createAdvancedInfoWindow(markerData) {{
             const rankBadge = markerData.rank !== null ? 
                 (markerData.is_special ? 
-                    '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200"><i class="fas fa-exclamation-triangle mr-1"></i>20+ Ranking</span>' :
+                    '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200"><i class="fas fa-exclamation-triangle mr-1"></i>20+ Ranking</span>' :
                     `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200"><i class="fas fa-trophy mr-1"></i>${{markerData.rank}}. Position</span>`
                 ) : 
                 '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200"><i class="fas fa-question mr-1"></i>No Ranking</span>';
@@ -1082,7 +1082,7 @@ class UltraModernMapsVisualizer:
             # Random rank oluştur
             if random.random() < 0.8:  # %80 ihtimalle 20+
                 rank = '20+'
-                color = '#ef4444'
+                color = '#6b7280'  # Gri renk
                 is_special = True
             else:
                 rank = random.randint(1, 19)

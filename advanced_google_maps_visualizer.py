@@ -136,10 +136,10 @@ class AdvancedGoogleMapsVisualizer:
             # Rank işleme
             if 'rank' in df.columns and pd.notna(row['rank']):
                 if str(row['rank']) == self.special_rank_value:
-                    # 20+ değerler için kırmızı renk
+                    # 20+ değerler için gri renk
                     marker.update({
                         'rank': '20+',
-                        'color': '#ef4444',
+                        'color': '#6b7280',
                         'icon_text': '20+',
                         'is_special': True
                     })
