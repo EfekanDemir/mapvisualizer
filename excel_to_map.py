@@ -48,7 +48,7 @@ class ExcelToMapConverter:
         self.color_gray = "#6c757d"
         
         # Google Places API setup
-        self.google_api_key = google_api_key or "AIzaSyDbxLE2AXm9ZhryXpuWpBz8LDlDnBc9-9Y"
+        self.google_api_key = google_api_key or "AIzaSyAiHuf16_z4Kv5P_p_lb8PYzUIjNPuVArg"
         if self.google_api_key:
             try:
                 self.gmaps = googlemaps.Client(key=self.google_api_key)
@@ -192,22 +192,22 @@ class ExcelToMapConverter:
         return center_lat, center_lon, zoom
     
     def interpolate_color(self, value: float, min_val: float, max_val: float) -> str:
-        """Yeşil-mor arası renk interpolasyonu"""
+        """Yeşil-kırmızı arası renk interpolasyonu (20+ değerler için)"""
         if min_val == max_val:
             return self.color_green
         
         # Normalize et (0-1 arası)
         normalized = (value - min_val) / (max_val - min_val)
         
-        # Yeşil RGB: (92, 184, 92)
-        # Mor RGB: (94, 53, 177)
-        green_rgb = (92, 184, 92)
-        purple_rgb = (94, 53, 177)
+        # Yeşil RGB: (34, 197, 94) - Modern yeşil
+        # Kırmızı RGB: (239, 68, 68) - Modern kırmızı
+        green_rgb = (34, 197, 94)
+        red_rgb = (239, 68, 68)
         
         # Interpolasyon
-        r = int(green_rgb[0] + (purple_rgb[0] - green_rgb[0]) * normalized)
-        g = int(green_rgb[1] + (purple_rgb[1] - green_rgb[1]) * normalized)
-        b = int(green_rgb[2] + (purple_rgb[2] - green_rgb[2]) * normalized)
+        r = int(green_rgb[0] + (red_rgb[0] - green_rgb[0]) * normalized)
+        g = int(green_rgb[1] + (red_rgb[1] - green_rgb[1]) * normalized)
+        b = int(green_rgb[2] + (red_rgb[2] - green_rgb[2]) * normalized)
         
         return f"#{r:02x}{g:02x}{b:02x}"
     
@@ -571,7 +571,7 @@ Bu betik Excel dosyalarından profesyonel ve interaktif haritalar oluşturur.
 🎨 PIN RENKLENDİRME:
    • Özel değer '%26%2310006%3B' → Kırmızı pin "20+" metni
    • Boş rank → Standart mavi pin  
-   • Sayısal rank → Yeşil-mor gradient renk
+   • Sayısal rank → Yeşil-kırmızı gradient renk
 
 🚀 KULLANIM:
    1. Excel dosyalarınızı bu klasöre koyun
@@ -580,14 +580,16 @@ Bu betik Excel dosyalarından profesyonel ve interaktif haritalar oluşturur.
    4. Harita otomatik açılır
 
 📦 GEREKSİNİMLER:
-   pip install pandas folium numpy openpyxl
+   pip install pandas folium numpy openpyxl googlemaps
 
 🔗 ÇIKTI:
    [dosya_adı]_harita.html - İnteraktif HTML haritası
         """)
         return
     
-    converter = ExcelToMapConverter()
+    # Google API key ile converter oluştur
+    api_key = "AIzaSyAiHuf16_z4Kv5P_p_lb8PYzUIjNPuVArg"
+    converter = ExcelToMapConverter(api_key)
     converter.run()
 
 
