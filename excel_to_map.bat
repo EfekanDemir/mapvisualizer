@@ -112,7 +112,7 @@ echo.
 echo 🚀 Harita oluşturucu başlatılıyor...
 echo.
 echo ===============================================================================
-python excel_to_map.py
+python ultra_modern_maps_visualizer.py
 set exit_code=%errorlevel%
 
 echo.
@@ -121,10 +121,11 @@ echo ===========================================================================
 if %exit_code%==0 (
     echo ✅ İşlem başarıyla tamamlandı!
     echo.
-    echo 📂 Bu klasörde .html uzantılı harita dosyanız oluşturuldu
+    echo 📂 interactive_map.html dosyası oluşturuldu
     echo 🌐 Harita otomatik olarak tarayıcınızda açıldı
     echo.
     echo 💡 İpucu: HTML dosyasını herhangi bir tarayıcıyla açabilirsiniz
+    echo 🎯 Özellikler: Modern Google Maps API, 3D görünüm, yoğunluk görselleştirmesi
 ) else (
     echo ❌ İşlem sırasında hata oluştu!
     echo.
@@ -132,6 +133,7 @@ if %exit_code%==0 (
     echo 1. Excel dosyanızın doğru formatta olduğundan emin olun
     echo 2. Gerekli sütunların mevcut olduğunu kontrol edin
     echo 3. Koordinat verilerinin sayısal olduğunu kontrol edin
+    echo 4. Google Maps API anahtarının geçerli olduğunu kontrol edin
 )
 
 echo.
