@@ -1127,8 +1127,7 @@ class UltraModernMapsVisualizer:
         
         # Dosya kaydet
         if not output_filename:
-            base_name = Path(excel_file).stem
-            output_filename = f"{base_name}_ultra_modern_3d.html"
+            output_filename = "interactive_map.html"
         
         with open(output_filename, 'w', encoding='utf-8') as f:
             f.write(html_content)
