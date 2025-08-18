@@ -139,30 +139,41 @@ class AdvancedGoogleMapsVisualizer:
                     # 20+ değerler için gri renk
                     marker.update({
                         'rank': '20+',
-                        'color': '#6b7280',
+                        'color': '#9ca3af',  # Daha açık gri renk
                         'icon_text': '20+',
                         'is_special': True
                     })
                 else:
                     try:
                         rank_val = float(row['rank'])
-                        # Sayısal değerler için gradient renk
-                        if numeric_ranks and len(numeric_ranks) > 1:
-                            color = self.get_color_gradient(
-                                rank_val, 
-                                min(numeric_ranks), 
-                                max(numeric_ranks),
-                                reverse=True  # Düşük rank = yeşil, yüksek rank = kırmızı
-                            )
+                        # 20 ve üzeri için gri renk
+                        if rank_val >= 20:
+                            marker.update({
+                                'rank': '20+',
+                                'color': '#9ca3af',  # Gri renk
+                                'icon_text': '20+',
+                                'is_special': True
+                            })
                         else:
-                            color = '#22c55e'
-                        
-                        marker.update({
-                            'rank': int(rank_val),
-                            'color': color,
-                            'icon_text': str(int(rank_val)),
-                            'is_special': False
-                        })
+                            # 1-19 arası sayısal değerler için gradient renk
+                            if numeric_ranks and len(numeric_ranks) > 1:
+                                # Gradient'i 1-19 arasında sınırla
+                                max_gradient_rank = min(19, max(numeric_ranks))
+                                color = self.get_color_gradient(
+                                    min(rank_val, 19), 
+                                    min(numeric_ranks), 
+                                    max_gradient_rank,
+                                    reverse=True  # Düşük rank = yeşil, yüksek rank = kırmızı
+                                )
+                            else:
+                                color = '#22c55e'
+                            
+                            marker.update({
+                                'rank': int(rank_val),
+                                'color': color,
+                                'icon_text': str(int(rank_val)),
+                                'is_special': False
+                            })
                     except (ValueError, TypeError):
                         marker.update({
                             'rank': str(row['rank']),

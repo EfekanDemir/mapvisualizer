@@ -4,14 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gelişmiş 3D Google Maps Görselleştirmesi</title>
-    <script>
-        (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
-            key: "AIzaSyAiHuf16_z4Kv5P_p_lb8PYzUIjNPuVArg",
-            v: "weekly",
-            libraries: "places,marker,visualization"
-        });
-    </script>
-    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAiHuf16_z4Kv5P_p_lb8PYzUIjNPuVArg&libraries=visualization,places&v=beta&map_ids=DEMO_MAP_ID&callback=initMap"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -193,9 +186,9 @@
                 3D Görünümü Aç/Kapat
             </button>
             
-            <button id="toggleDensity" class="control-button w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+            <button id="toggleHeatmap" class="control-button w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <i class="fas fa-fire"></i>
-                Yoğunluk Görünümü Aç/Kapat
+                Isı Haritası Aç/Kapat
             </button>
             
             <button id="toggleMarkers" class="control-button w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
@@ -211,11 +204,6 @@
             <button id="fitBounds" class="control-button w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
                 <i class="fas fa-expand-arrows-alt"></i>
                 Tüm Konumları Göster
-            </button>
-            
-            <button id="exportHeatmap" class="control-button w-full bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <i class="fas fa-fire"></i>
-                Isı Haritası İndir
             </button>
         </div>
         
@@ -303,280 +291,91 @@
     <script>
         // Global değişkenler
         let map;
+        let heatmap;
         let markers = [];
-        let markerClusterer = null;
-        let heatmap = null;
         let is3DEnabled = false;
-        let isDensityVisible = false;
+        let isHeatmapVisible = true;
         let areMarkersVisible = true;
         let isClusteringEnabled = false;
-        let densityCircles = [];
+        let markerCluster;
         
         // Veri
+        const heatmapData = [{"lat": 50.58456, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.58456, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.58456, "lng": 8.672839, "weight": 1.0}, {"lat": 50.49472869486295, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.58456, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.672839, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.58456, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.58456, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.672839, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.672839, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.81431927444174, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.71999909148058, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.672839, "weight": 3.0}, {"lat": 50.52467246324196, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.76715918296116, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.55461623162098, "lng": 8.672839, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.672839, "weight": 3.0}, {"lat": 50.49472869486295, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.61450376837902, "lng": 8.62567890851942, "weight": 3.0}, {"lat": 50.644447536758044, "lng": 8.53135872555826, "weight": 3.0}, {"lat": 50.58456, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.57851881703884, "weight": 3.0}, {"lat": 50.67439130513706, "lng": 8.76715918296116, "weight": 3.0}];
         const markersData = [{"lat": 50.58456, "lng": 8.76715918296116, "title": "Location: 50.58456,8.76715918296116 Position: %26%2310006%3B", "id": "marker_0", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.71999909148058, "title": "Location: 50.61450376837902,8.71999909148058 Position: %26%2310006%3B", "id": "marker_1", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.53135872555826, "title": "Location: 50.58456,8.53135872555826 Position: %26%2310006%3B", "id": "marker_2", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.672839, "title": "Location: 50.58456,8.672839 Position: 6", "id": "marker_3", "rank": 6, "color": "#22c55e", "icon_text": "6", "is_special": false}, {"lat": 50.49472869486295, "lng": 8.71999909148058, "title": "Location: 50.49472869486295,8.71999909148058 Position: %26%2310006%3B", "id": "marker_4", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.62567890851942, "title": "Location: 50.67439130513706,8.62567890851942 Position: %26%2310006%3B", "id": "marker_5", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.76715918296116, "title": "Location: 50.61450376837902,8.76715918296116 Position: %26%2310006%3B", "id": "marker_6", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.71999909148058, "title": "Location: 50.55461623162098,8.71999909148058 Position: %26%2310006%3B", "id": "marker_7", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.81431927444174, "title": "Location: 50.55461623162098,8.81431927444174 Position: %26%2310006%3B", "id": "marker_8", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.53135872555826, "title": "Location: 50.49472869486295,8.53135872555826 Position: %26%2310006%3B", "id": "marker_9", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.81431927444174, "title": "Location: 50.61450376837902,8.81431927444174 Position: %26%2310006%3B", "id": "marker_10", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.76715918296116, "title": "Location: 50.644447536758044,8.76715918296116 Position: %26%2310006%3B", "id": "marker_11", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.81431927444174, "title": "Location: 50.58456,8.81431927444174 Position: %26%2310006%3B", "id": "marker_12", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.672839, "title": "Location: 50.52467246324196,8.672839 Position: %26%2310006%3B", "id": "marker_13", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.71999909148058, "title": "Location: 50.644447536758044,8.71999909148058 Position: %26%2310006%3B", "id": "marker_14", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.57851881703884, "title": "Location: 50.644447536758044,8.57851881703884 Position: %26%2310006%3B", "id": "marker_15", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.81431927444174, "title": "Location: 50.67439130513706,8.81431927444174 Position: %26%2310006%3B", "id": "marker_16", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.71999909148058, "title": "Location: 50.52467246324196,8.71999909148058 Position: %26%2310006%3B", "id": "marker_17", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.71999909148058, "title": "Location: 50.58456,8.71999909148058 Position: %26%2310006%3B", "id": "marker_18", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.53135872555826, "title": "Location: 50.55461623162098,8.53135872555826 Position: %26%2310006%3B", "id": "marker_19", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.62567890851942, "title": "Location: 50.58456,8.62567890851942 Position: %26%2310006%3B", "id": "marker_20", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.81431927444174, "title": "Location: 50.644447536758044,8.81431927444174 Position: %26%2310006%3B", "id": "marker_21", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.672839, "title": "Location: 50.49472869486295,8.672839 Position: %26%2310006%3B", "id": "marker_22", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.76715918296116, "title": "Location: 50.55461623162098,8.76715918296116 Position: %26%2310006%3B", "id": "marker_23", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.57851881703884, "title": "Location: 50.55461623162098,8.57851881703884 Position: %26%2310006%3B", "id": "marker_24", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.76715918296116, "title": "Location: 50.52467246324196,8.76715918296116 Position: %26%2310006%3B", "id": "marker_25", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.57851881703884, "title": "Location: 50.52467246324196,8.57851881703884 Position: %26%2310006%3B", "id": "marker_26", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.81431927444174, "title": "Location: 50.49472869486295,8.81431927444174 Position: %26%2310006%3B", "id": "marker_27", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.62567890851942, "title": "Location: 50.52467246324196,8.62567890851942 Position: %26%2310006%3B", "id": "marker_28", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.62567890851942, "title": "Location: 50.644447536758044,8.62567890851942 Position: %26%2310006%3B", "id": "marker_29", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.62567890851942, "title": "Location: 50.55461623162098,8.62567890851942 Position: %26%2310006%3B", "id": "marker_30", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.672839, "title": "Location: 50.644447536758044,8.672839 Position: %26%2310006%3B", "id": "marker_31", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.81431927444174, "title": "Location: 50.52467246324196,8.81431927444174 Position: %26%2310006%3B", "id": "marker_32", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.53135872555826, "title": "Location: 50.61450376837902,8.53135872555826 Position: %26%2310006%3B", "id": "marker_33", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.71999909148058, "title": "Location: 50.67439130513706,8.71999909148058 Position: %26%2310006%3B", "id": "marker_34", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.672839, "title": "Location: 50.67439130513706,8.672839 Position: %26%2310006%3B", "id": "marker_35", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.52467246324196, "lng": 8.53135872555826, "title": "Location: 50.52467246324196,8.53135872555826 Position: %26%2310006%3B", "id": "marker_36", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.57851881703884, "title": "Location: 50.61450376837902,8.57851881703884 Position: %26%2310006%3B", "id": "marker_37", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.53135872555826, "title": "Location: 50.67439130513706,8.53135872555826 Position: %26%2310006%3B", "id": "marker_38", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.76715918296116, "title": "Location: 50.49472869486295,8.76715918296116 Position: %26%2310006%3B", "id": "marker_39", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.57851881703884, "title": "Location: 50.49472869486295,8.57851881703884 Position: %26%2310006%3B", "id": "marker_40", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.55461623162098, "lng": 8.672839, "title": "Location: 50.55461623162098,8.672839 Position: %26%2310006%3B", "id": "marker_41", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.672839, "title": "Location: 50.61450376837902,8.672839 Position: %26%2310006%3B", "id": "marker_42", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.49472869486295, "lng": 8.62567890851942, "title": "Location: 50.49472869486295,8.62567890851942 Position: %26%2310006%3B", "id": "marker_43", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.61450376837902, "lng": 8.62567890851942, "title": "Location: 50.61450376837902,8.62567890851942 Position: %26%2310006%3B", "id": "marker_44", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.644447536758044, "lng": 8.53135872555826, "title": "Location: 50.644447536758044,8.53135872555826 Position: %26%2310006%3B", "id": "marker_45", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.58456, "lng": 8.57851881703884, "title": "Location: 50.58456,8.57851881703884 Position: %26%2310006%3B", "id": "marker_46", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.57851881703884, "title": "Location: 50.67439130513706,8.57851881703884 Position: %26%2310006%3B", "id": "marker_47", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}, {"lat": 50.67439130513706, "lng": 8.76715918296116, "title": "Location: 50.67439130513706,8.76715918296116 Position: %26%2310006%3B", "id": "marker_48", "rank": "20+", "color": "#9ca3af", "icon_text": "20+", "is_special": true}];
         const bounds = {"north": 50.67439130513706, "south": 50.49472869486295, "east": 8.81431927444174, "west": 8.53135872555826, "center_lat": 50.584559999999996, "center_lng": 8.672839};
         
-        // Modern Google Maps API ile harita başlatma
-        async function initMap() {
-            try {
-                // Google Maps API'yi yükle
-                const { Map } = await google.maps.importLibrary("maps");
-                const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-                
-                // Harita oluştur
-                map = new Map(document.getElementById('map'), {
-                    center: { lat: bounds.center_lat, lng: bounds.center_lng },
-                    zoom: 12,
-                    mapTypeId: 'roadmap',
-                    tilt: 0,
-                    heading: 0,
-                    styles: [
-                        {
-                            featureType: 'poi',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        },
-                        {
-                            featureType: 'transit',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        }
-                    ],
-                    disableDefaultUI: false,
-                    zoomControl: true,
-                    mapTypeControl: true,
-                    scaleControl: true,
-                    streetViewControl: true,
-                    rotateControl: true,
-                    fullscreenControl: true
-                });
-                
-                // Marker'ları oluştur
-                await createMarkers();
-                
-                // Kontrolleri bağla
-                setupControls();
-                
-                // Yükleme ekranını gizle
-                setTimeout(() => {
-                    document.getElementById('loading').classList.add('hidden');
-                }, 1000);
-                
-                console.log('Harita başarıyla yüklendi!');
-                
-            } catch (error) {
-                console.error('Harita yüklenirken hata:', error);
-                showError('Google Maps API yüklenemedi: ' + error.message);
-            }
+        // Harita başlatma
+        function initMap() {
+            // Harita oluştur
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 50.584559999999996, lng: 8.672839 },
+                zoom: 12,
+                mapTypeId: 'roadmap',
+                mapId: 'DEMO_MAP_ID', // 3D özellikler için
+                tilt: 0,
+                heading: 0,
+                styles: [
+                    {
+                        featureType: 'all',
+                        elementType: 'geometry',
+                        stylers: [{ saturation: -10 }]
+                    }
+                ]
+            });
+            
+            // Isı haritası oluştur
+            createHeatmap();
+            
+            // Marker'ları oluştur
+            createMarkers();
+            
+            // Kontrolleri bağla
+            setupControls();
+            
+            // Yükleme ekranını gizle
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1000);
+            
+            // Places service
+            const service = new google.maps.places.PlacesService(map);
+            
+            console.log('Harita başarıyla yüklendi!');
         }
         
-        // Yoğunluk görselleştirmesi oluştur
-        function createDensityVisualization() {
-            // Mevcut çemberleri temizle
-            densityCircles.forEach(circle => circle.setMap(null));
-            densityCircles = [];
+        // Isı haritası oluştur
+        function createHeatmap() {
+            const heatmapPoints = heatmapData.map(point => ({
+                location: new google.maps.LatLng(point.lat, point.lng),
+                weight: point.weight
+            }));
             
-            if (!isDensityVisible) return;
-            
-            // Her marker için yoğunluk çemberi oluştur
-            markersData.forEach(markerData => {
-                const circle = new google.maps.Circle({
-                    strokeColor: markerData.color,
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: markerData.color,
-                    fillOpacity: 0.35,
-                    map: map,
-                    center: { lat: markerData.lat, lng: markerData.lng },
-                    radius: markerData.is_special ? 800 : 400 // 20+ sıralama için daha büyük çember
-                });
-                
-                densityCircles.push(circle);
+            heatmap = new google.maps.visualization.HeatmapLayer({
+                data: heatmapPoints,
+                map: map,
+                radius: 50,
+                opacity: 0.8,
+                gradient: [
+                    'rgba(0, 255, 255, 0)',
+                    'rgba(0, 255, 255, 1)',
+                    'rgba(0, 191, 255, 1)',
+                    'rgba(0, 127, 255, 1)',
+                    'rgba(0, 63, 255, 1)',
+                    'rgba(0, 0, 255, 1)',
+                    'rgba(0, 0, 223, 1)',
+                    'rgba(0, 0, 191, 1)',
+                    'rgba(0, 0, 159, 1)',
+                    'rgba(0, 0, 127, 1)',
+                    'rgba(63, 0, 91, 1)',
+                    'rgba(127, 0, 63, 1)',
+                    'rgba(191, 0, 31, 1)',
+                    'rgba(255, 0, 0, 1)'
+                ]
             });
         }
         
-        // Kümeleme fonksiyonu
-        function toggleClustering() {
-            if (isClusteringEnabled) {
-                // Kümelemeyi kapat
-                if (markerClusterer) {
-                    markerClusterer.clearMarkers();
-                    markerClusterer = null;
-                }
-                // Marker'ları tekrar göster
-                markers.forEach(marker => marker.map = map);
-            } else {
-                // Kümelemeyi aç
-                if (window.MarkerClusterer) {
-                    // Önce marker'ları haritadan kaldır
-                    markers.forEach(marker => marker.map = null);
-                    
-                    // MarkerClusterer oluştur
-                    markerClusterer = new MarkerClusterer({
-                        markers: markers,
-                        map: map,
-                        algorithm: new window.markerClusterer.GridAlgorithm({
-                            gridSize: 60,
-                            maxDistance: 20000
-                        }),
-                        renderer: {
-                            render: ({ count, position }) => {
-                                const color = count > 10 ? '#ef4444' : count > 5 ? '#f97316' : '#22c55e';
-                                const svg = `<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="20" cy="20" r="18" fill="${color}" stroke="white" stroke-width="2"/>
-                                    <text x="20" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="white">${count}</text>
-                                </svg>`;
-                                return new google.maps.marker.AdvancedMarkerElement({
-                                    position,
-                                    content: new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement,
-                                });
-                            }
-                        }
-                    });
-                }
-            }
-            isClusteringEnabled = !isClusteringEnabled;
-        }
-
-        // Isı haritası oluştur ve indir
-        async function exportHeatmap() {
-            try {
-                const button = document.getElementById('exportHeatmap');
-                const originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> İşleniyor...';
-                button.disabled = true;
-
-                // Visualization library'yi yükle
-                const { HeatmapLayer } = await google.maps.importLibrary("visualization");
-                
-                // Heatmap verisi hazırla
-                const heatmapData = markersData.map(marker => {
-                    // Ranking'e göre ağırlık belirle
-                    let weight = 1;
-                    if (marker.is_special) {
-                        weight = 0.5; // 20+ için düşük ağırlık
-                    } else if (typeof marker.rank === 'number') {
-                        // 1-19 arası için ters ağırlık (düşük rank = yüksek ağırlık)
-                        weight = (20 - marker.rank) / 19 * 2; // 0.1 - 2 arası
-                    }
-                    
-                    return {
-                        location: new google.maps.LatLng(marker.lat, marker.lng),
-                        weight: weight
-                    };
-                });
-
-                // Mevcut heatmap'i kaldır
-                if (heatmap) {
-                    heatmap.setMap(null);
-                }
-
-                // Yeni heatmap oluştur
-                heatmap = new HeatmapLayer({
-                    data: heatmapData,
-                    map: map,
-                    radius: 50,
-                    opacity: 0.8,
-                    gradient: [
-                        'rgba(0, 255, 255, 0)',
-                        'rgba(0, 255, 255, 1)',
-                        'rgba(0, 191, 255, 1)',
-                        'rgba(0, 127, 255, 1)',
-                        'rgba(0, 63, 255, 1)',
-                        'rgba(0, 0, 255, 1)',
-                        'rgba(0, 0, 223, 1)',
-                        'rgba(0, 0, 191, 1)',
-                        'rgba(0, 0, 159, 1)',
-                        'rgba(0, 0, 127, 1)',
-                        'rgba(63, 0, 91, 1)',
-                        'rgba(127, 0, 63, 1)',
-                        'rgba(191, 0, 31, 1)',
-                        'rgba(255, 0, 0, 1)'
-                    ]
-                });
-
-                // Marker'ları gizle
-                const originalMarkersVisible = areMarkersVisible;
-                if (areMarkersVisible) {
-                    markers.forEach(marker => marker.map = null);
-                    areMarkersVisible = false;
-                }
-
-                // Screenshot için kısa bir bekleme
-                setTimeout(async () => {
-                    try {
-                        // Canvas oluştur ve harita görüntüsünü al
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = 1200;
-                        canvas.height = 800;
-
-                        // Harita container'ından görüntü al
-                        const mapDiv = document.getElementById('map');
-                        
-                        // HTML2Canvas kullanmak yerine basit bir heatmap verisi indirme
-                        const heatmapDataExport = {
-                            timestamp: new Date().toISOString(),
-                            bounds: bounds,
-                            data: markersData.map(marker => ({
-                                lat: marker.lat,
-                                lng: marker.lng,
-                                rank: marker.rank,
-                                weight: marker.is_special ? 0.5 : (typeof marker.rank === 'number' ? (20 - marker.rank) / 19 * 2 : 1),
-                                is_special: marker.is_special
-                            }))
-                        };
-
-                        // JSON olarak indir
-                        const dataStr = JSON.stringify(heatmapDataExport, null, 2);
-                        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-                        const url = URL.createObjectURL(dataBlob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `heatmap_data_${new Date().toISOString().slice(0,10)}.json`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-
-                        // Marker'ları geri göster
-                        if (originalMarkersVisible) {
-                            markers.forEach(marker => marker.map = map);
-                            areMarkersVisible = true;
-                        }
-
-                        // Heatmap'i kaldır
-                        setTimeout(() => {
-                            if (heatmap) {
-                                heatmap.setMap(null);
-                                heatmap = null;
-                            }
-                        }, 3000);
-
-                        alert('Isı haritası verisi başarıyla indirildi!');
-
-                    } catch (error) {
-                        console.error('Heatmap export error:', error);
-                        alert('Isı haritası indirme hatası: ' + error.message);
-                    } finally {
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                    }
-                }, 2000);
-
-            } catch (error) {
-                console.error('Heatmap creation error:', error);
-                alert('Isı haritası oluşturma hatası: ' + error.message);
-                const button = document.getElementById('exportHeatmap');
-                button.innerHTML = '<i class="fas fa-fire"></i> Isı Haritası İndir';
-                button.disabled = false;
-            }
-        }
-
         // Marker'ları oluştur
-        async function createMarkers() {
-            const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-            
+        function createMarkers() {
             markersData.forEach((markerData, index) => {
                 // Özel marker ikonu oluştur
                 const markerDiv = document.createElement('div');
@@ -584,8 +383,8 @@
                 markerDiv.style.backgroundColor = markerData.color;
                 markerDiv.textContent = markerData.icon_text;
                 
-                // Advanced Marker oluştur
-                const marker = new AdvancedMarkerElement({
+                // Advanced Marker oluştur (Maps API v3.56+)
+                const marker = new google.maps.marker.AdvancedMarkerElement({
                     position: { lat: markerData.lat, lng: markerData.lng },
                     map: map,
                     content: markerDiv,
@@ -672,10 +471,10 @@
                 }
             });
             
-            // Density toggle
-            document.getElementById('toggleDensity').addEventListener('click', () => {
-                isDensityVisible = !isDensityVisible;
-                createDensityVisualization();
+            // Heatmap toggle
+            document.getElementById('toggleHeatmap').addEventListener('click', () => {
+                isHeatmapVisible = !isHeatmapVisible;
+                heatmap.setMap(isHeatmapVisible ? map : null);
             });
             
             // Markers toggle
@@ -699,40 +498,19 @@
             document.getElementById('mapStyle').addEventListener('change', (e) => {
                 map.setMapTypeId(e.target.value);
             });
-            
-            // Clustering toggle
-            document.getElementById('toggleClustering').addEventListener('click', () => {
-                toggleClustering();
-                console.log('Clustering:', isClusteringEnabled ? 'Açık' : 'Kapalı');
-                
-                // Button text'ini güncelle
-                const button = document.getElementById('toggleClustering');
-                const icon = button.querySelector('i');
-                icon.className = isClusteringEnabled ? 'fas fa-layer-group text-yellow-300' : 'fas fa-layer-group';
-            });
-            
-            // Heatmap export
-            document.getElementById('exportHeatmap').addEventListener('click', () => {
-                exportHeatmap();
-            });
         }
         
-        // Hata gösterme fonksiyonu
-        function showError(message) {
+        // Hata durumunda fallback
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            console.error('Harita yüklenirken hata:', error);
             document.getElementById('loading').innerHTML = `
                 <div class="text-center text-white">
                     <i class="fas fa-exclamation-triangle text-4xl mb-4 text-red-300"></i>
                     <h2 class="text-2xl font-bold mb-2">Harita Yüklenemedi</h2>
-                    <p class="text-lg opacity-90">${message}</p>
+                    <p class="text-lg opacity-90">Google Maps API anahtarını kontrol edin.</p>
                 </div>
             `;
-        }
-        
-        // Haritayı başlat
-        initMap().catch(error => {
-            console.error('Harita başlatma hatası:', error);
-            showError('Harita başlatılamadı: ' + error.message);
-        });
+        };
     </script>
 </body>
 </html>
